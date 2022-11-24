@@ -1,21 +1,23 @@
 import React from "react";
 import { Action, ActionPanel, Form, showToast, Toast } from "@raycast/api";
-import translate from "@vitalets/google-translate-api";
-import debounce from "debounce";
+import { translate } from "@vitalets/google-translate-api";
 import { usePreferences } from "./hooks";
 import { LanguageCode, supportedLanguagesByCode, languages } from "./languages";
+import { useDebouncedValue } from "./useDebouncedValue";
 
 const TranslateForm = () => {
   const preferences = usePreferences();
 
   const [text, setText] = React.useState("");
+  const debouncedValue = useDebouncedValue(text, 500);
+
   const [fromLang, setFromLang] = React.useState<LanguageCode | string>(preferences.lang1);
   const fromLangObj = supportedLanguagesByCode[fromLang as LanguageCode];
   const [toLang, setToLang] = React.useState<LanguageCode | string>(preferences.lang2);
   const toLangObj = supportedLanguagesByCode[toLang as LanguageCode];
 
   const [isLoading, setIsLoading] = React.useState(false);
-  const [translated, setTranslated] = React.useState<translate.ITranslateResponse["text"]>();
+  const [translatedText, setTranslatedText] = React.useState<string>();
 
   const handleChange = (value: string) => {
     if (value.length > 5000) {
@@ -30,33 +32,35 @@ const TranslateForm = () => {
     }
   };
 
-  const doTranslate = React.useMemo(() => {
-    const debouncedTranslate = debounce(
-      async (text: string, fromLang: LanguageCode | string, toLang: LanguageCode | string) => {
-        const result = await translate(text, {
-          from: fromLang,
-          to: toLang,
-        });
-
-        setTranslated(result.text);
-        setIsLoading(false);
-      },
-      500
-    );
-
-    return (text: string | undefined, fromLang: LanguageCode | string, toLang: LanguageCode | string) => {
-      if (text) {
-        setIsLoading(true);
-        debouncedTranslate(text, fromLang, toLang);
-      } else {
-        setTranslated("");
-      }
-    };
-  }, []);
+  const textRef = React.useRef(text);
+  textRef.current = text;
 
   React.useEffect(() => {
-    doTranslate(text, fromLang, toLang);
-  }, [text, fromLang, toLang]);
+    if (!text) {
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
+  }, [text]);
+
+  React.useEffect(() => {
+    if (!debouncedValue) return;
+
+    translate(debouncedValue, {
+      from: fromLang,
+      to: toLang,
+    })
+      .then((res) => {
+        if (textRef.current === debouncedValue) {
+          setTranslatedText(res.text);
+        }
+      })
+      .finally(() => {
+        if (textRef.current === debouncedValue) {
+          setIsLoading(false);
+        }
+      });
+  }, [debouncedValue, fromLang, toLang]);
 
   return (
     <Form
@@ -64,7 +68,7 @@ const TranslateForm = () => {
       actions={
         <ActionPanel>
           <ActionPanel.Section title="Generals">
-            <Action.CopyToClipboard title="Copy Translated" content={translated ?? ""} icon={toLangObj?.flag} />
+            <Action.CopyToClipboard title="Copy Translated" content={translatedText ?? ""} icon={toLangObj?.flag} />
             <Action.CopyToClipboard title="Copy Text" content={text ?? ""} icon={fromLangObj?.flag} />
             <Action.OpenInBrowser
               title="Open in Google Translate"
@@ -129,7 +133,7 @@ const TranslateForm = () => {
         </ActionPanel>
       }
     >
-      <Form.TextArea id="text" title="Text" onChange={handleChange} />
+      <Form.TextArea id="text" title="Text" onChange={handleChange} value={text} />
       <Form.Dropdown id="language_from" title="From" value={fromLang} onChange={setFromLang} storeValue>
         {languages.map((lang) => (
           <Form.Dropdown.Item key={lang.code} value={lang.code} title={lang.name} icon={lang?.flag ?? "🏳️"} />
@@ -140,7 +144,13 @@ const TranslateForm = () => {
           <Form.Dropdown.Item key={lang.code} value={lang.code} title={lang.name} icon={lang?.flag ?? "🏳️"} />
         ))}
       </Form.Dropdown>
-      <Form.TextArea id="result" title="Translation" value={translated} placeholder="Translation" />
+      <Form.TextArea
+        id="result"
+        title="Translation"
+        value={translatedText}
+        onChange={() => undefined}
+        placeholder="Translation"
+      />
     </Form>
   );
 };

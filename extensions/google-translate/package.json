@@ -918,9 +918,10 @@
     }
   ],
   "dependencies": {
-    "@raycast/api": "^1.25.1",
+    "@raycast/api": "^1.43.2",
+    "@raycast/utils": "^1.4.11",
     "@types/debounce": "^1.2.1",
-    "@vitalets/google-translate-api": "^7.0.0",
+    "@vitalets/google-translate-api": "^9.0.0",
     "debounce": "^1.2.1"
   },
   "devDependencies": {

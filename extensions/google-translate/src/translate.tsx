@@ -1,6 +1,6 @@
 import { List, getPreferenceValues, ActionPanel, showToast, Toast, Action, Icon } from "@raycast/api";
 import { ReactElement, useEffect, useState } from "react";
-import translate from "@vitalets/google-translate-api";
+import { translate } from "@vitalets/google-translate-api";
 import { supportedLanguagesByCode, LanguageCode } from "./languages";
 
 let count = 0;

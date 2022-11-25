@@ -4,6 +4,7 @@ import { translate } from "@vitalets/google-translate-api";
 import { usePreferences } from "./hooks";
 import { LanguageCode, supportedLanguagesByCode, languages } from "./languages";
 import { useDebouncedValue } from "./useDebouncedValue";
+import { usePromise } from "@raycast/utils";
 
 const TranslateForm = () => {
   const preferences = usePreferences();
@@ -15,9 +16,6 @@ const TranslateForm = () => {
   const fromLangObj = supportedLanguagesByCode[fromLang as LanguageCode];
   const [toLang, setToLang] = React.useState<LanguageCode | string>(preferences.lang2);
   const toLangObj = supportedLanguagesByCode[toLang as LanguageCode];
-
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [translatedText, setTranslatedText] = React.useState<string>();
 
   const handleChange = (value: string) => {
     if (value.length > 5000) {
@@ -32,35 +30,23 @@ const TranslateForm = () => {
     }
   };
 
-  const textRef = React.useRef(text);
-  textRef.current = text;
+  const { data: translatedText = "", isLoading } = usePromise(
+    async (text: string, fromLang: string, toLang: string) => {
+      if (!text) {
+        return "";
+      }
 
-  React.useEffect(() => {
-    if (!text) {
-      setIsLoading(false);
-    } else {
-      setIsLoading(true);
-    }
-  }, [text]);
-
-  React.useEffect(() => {
-    if (!debouncedValue) return;
-
-    translate(debouncedValue, {
-      from: fromLang,
-      to: toLang,
-    })
-      .then((res) => {
-        if (textRef.current === debouncedValue) {
-          setTranslatedText(res.text);
-        }
-      })
-      .finally(() => {
-        if (textRef.current === debouncedValue) {
-          setIsLoading(false);
-        }
+      const result = await translate(text, {
+        from: fromLang,
+        to: toLang,
       });
-  }, [debouncedValue, fromLang, toLang]);
+
+      console.log(" >>>> RES", result.raw);
+
+      return result.text;
+    },
+    [debouncedValue, fromLang, toLang]
+  );
 
   return (
     <Form

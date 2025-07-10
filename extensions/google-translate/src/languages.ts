@@ -6,6 +6,7 @@ export type LanguageName = (typeof _languages)[LanguageCode];
 export type LanguagesItem = {
   code: LanguageCode;
   name: LanguageName;
+  flag?: string;
 };
 export const english: LanguagesItem = { code: "en", name: _languages.en };
 export const autoDetect: LanguagesItem = { code: "auto", name: _languages.auto };
@@ -22,11 +23,10 @@ const flags: Partial<Record<LanguageCode, string>> = flagsPreference.split(" ").
   {} as Partial<Record<LanguageCode, string>>,
 );
 
-console.log(" >>> FLAS", flags);
-
 export const languages: LanguagesItem[] = (Object.keys(_languages) as (keyof typeof _languages)[]).map((code) => ({
   code,
   name: _languages[code],
+  flag: flags[code],
 }));
 
 export const supportedLanguagesByCode = languages.reduce(

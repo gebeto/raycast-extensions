@@ -2117,6 +2117,13 @@
       "description": "HTTP proxy URL to use for translation requests (e.g. http://proxy.example.com:8080)",
       "type": "textfield",
       "required": false
+    },
+    {
+      "name": "flags",
+      "title": "Language Flags",
+      "description": "Display language flags",
+      "type": "textfield",
+      "required": false
     }
   ],
   "dependencies": {
